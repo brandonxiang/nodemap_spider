@@ -136,22 +136,25 @@ function mkdirsSync(dirpath, mode) {
 
 
 var mosaic = function(left, right, top, bottom, zoom, output, filename) {
-        var sizeX = (right - left + 1) * 256
-        var sizeY = (bottom - top + 1) * 256
-        var outputImage = images(sizeX, sizeY)
+    var sizeX = (right - left + 1) * 256
+    var sizeY = (bottom - top + 1) * 256
+    var outputImage = images(sizeX, sizeY)
 
-        for (var x = left; x < right + 1; x++) {
-            for (var y = top; y < bottom + 1; y++) {
-                var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: zoom, filename: filename })
-                if (!fs.existsSync(filename)) {
-                    var targetImage = images(pathname);
-                    outputImage.draw(targetImage, 256 * (x - left), 256 * (y - top))
-                }
+    for (var x = left; x < right + 1; x++) {
+        for (var y = top; y < bottom + 1; y++) {
+            var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: zoom, filename: filename })
+            if (!fs.existsSync(filename)) {
+                var targetImage = images(pathname);
+                outputImage.draw(targetImage, 256 * (x - left), 256 * (y - top))
             }
         }
-        outputImage.save("output/" + output + ".png")
     }
-    // _download();
-    //  processTilenum(803,857,984,1061,8,'WORKNET')
-procesLatlng(23.3488500800, 112.4821141700, 21.6283230000, 115.0540240000, 10, 'gaode', 'gaode')
-    // checkout()
+    outputImage.save("output/" + output + ".png")
+}
+
+if (require.main === module) {
+    procesLatlng(23.3488500800, 112.4821141700, 21.6283230000, 115.0540240000, 10, 'gaode', 'gaode')
+}
+// _download();
+//  processTilenum(803,857,984,1061,8,'WORKNET')
+// checkout()
