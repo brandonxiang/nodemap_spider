@@ -2,7 +2,8 @@ var fs = require('fs')
 var request = require('request')
 var util = require('util')
 var path = require('path')
-var image = require('images')
+var images = require('images')
+var http = require('http')
 
 
 URL = {
@@ -23,6 +24,7 @@ var procesLatlng = function(north, west, south, east, zoom, output, maptype) {
     var left_top = latlng2tilenum(north, west, zoom)
     var right_bottom = latlng2tilenum(south, east, zoom)
     checkout(left_top[0], right_bottom[0], left_top[1], right_bottom[1], zoom, output, maptype)
+    mosaic(left_top[0], right_bottom[0], left_top[1], right_bottom[1], zoom, output, maptype)
 }
 
 
@@ -38,6 +40,7 @@ var download = function(left, right, top, bottom, z, filename, maptype) {
         for (var y = top; y < bottom + 1; y++) {
             var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: z, filename: filename })
             _download(x, y, z, pathname, maptype)
+
         }
     }
 }
@@ -47,17 +50,33 @@ var _download = function(x, y, z, filename, maptype) {
     var pathname = path.dirname(filename)
     mkdirsSync(pathname)
     if (!fs.existsSync(filename)) {
-        request.head(url, function(err, res, body) {
-            if (err) {
-                console.log('get err ' + err)
-                return
-            }
-            request(url).on('error', function(err) {
-                console.log('pipe err ' + err)
+        http.get(url, function(res) {
+                console.log(res)
+                var imgData = ""
+                res.setEncoding("binary")
+                res.on("data", function(chunk) {
+                    imgData += chunk;
+                })
+                res.on("end", function() {
+                    fs.writeFile(filename, imgData, "binary", function(err) {
+                        if (err) {
+                            console.log("down fail");
+                        }
+                        console.log("down success");
+                    })
+                })
             })
-                .pipe(fs.createWriteStream(filename))
-            console.log('downloaded ' + filename)
-        })
+            // request.head(url, function(err, res, body) {
+            //     if (err) {
+            //         console.log('get err ' + err)
+            //         return
+            //     }
+            //     request(url).on('error', function(err) {
+            //             console.log('pipe err ' + err)
+            //         })
+            //         .pipe(fs.createWriteStream(filename))
+            //     console.log('downloaded ' + filename)
+            // })
     }
 }
 
@@ -79,8 +98,10 @@ var checkout = function(left, right, top, bottom, z, filename, maptype) {
         for (var y = top; y < bottom + 1; y++) {
             var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: z, filename: filename })
             var abspath = path.resolve(pathname)
-            console.log(abspath)
+
             if (!fs.existsSync(abspath)) {
+                _download(x, y, z, pathname, maptype)
+            } else {
                 fs.stat(abspath, function(err, stats) {
                     if (err) {
                         _download(x, y, z, pathname, maptype)
@@ -126,20 +147,22 @@ function mkdirsSync(dirpath, mode) {
 
 
 var mosaic = function(left, right, top, bottom, zoom, output, filename) {
-    var sizeX = (right - left + 1) * 256
-    var sizeY = (bottom - top + 1) * 256
-    var outputImage = images(sizeX,sizeY)
+        var sizeX = (right - left + 1) * 256
+        var sizeY = (bottom - top + 1) * 256
+        var outputImage = images(sizeX, sizeY)
 
-    for (var i = left; i < right+1; i++) {
-        for(var j = top; j< bottom+1;j++){
-            var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: z, filename: filename })
-            if (!fs.existsSync(filename)) {
-              var targetImage = image()
+        for (var x = left; x < right + 1; x++) {
+            for (var y = top; y < bottom + 1; y++) {
+                var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: zoom, filename: filename })
+                if (!fs.existsSync(filename)) {
+                    var targetImage = images(pathname);
+                    outputImage.draw(targetImage, 256 * (x - left), 256 * (y - top))
+                }
             }
         }
+        outputImage.save("output/" + output + ".png")
     }
-}
     // _download();
     //  processTilenum(803,857,984,1061,8,'WORKNET')
-procesLatlng(23.3488500800, 112.4821141700, 21.6283230000, 115.0540240000, 13, 'gaode', 'gaode')
+procesLatlng(23.3488500800, 112.4821141700, 21.6283230000, 115.0540240000, 10, 'gaode', 'gaode')
     // checkout()
