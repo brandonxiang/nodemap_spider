@@ -23,15 +23,15 @@ var procesLatlng = function(north, west, south, east, zoom, output, maptype) {
 
     var left_top = latlng2tilenum(north, west, zoom)
     var right_bottom = latlng2tilenum(south, east, zoom)
-    checkout(left_top[0], right_bottom[0], left_top[1], right_bottom[1], zoom, output, maptype)
-    mosaic(left_top[0], right_bottom[0], left_top[1], right_bottom[1], zoom, output, maptype)
+    processTilenum(left_top[0], right_bottom[0], left_top[1], right_bottom[1], zoom, output, maptype)
 }
 
 
 var processTilenum = function(left, right, top, bottom, zoom, output, maptype) {
     output = output || 'mosaic'
     maptype = maptype || 'default'
-    download(left, right, top, bottom, zoom, output, maptype)
+    checkout(left, right, top, bottom, zoom, output, maptype)
+    mosaic(left, right, top, bottom, zoom, output, maptype)
 }
 
 var download = function(left, right, top, bottom, z, filename, maptype) {
@@ -51,32 +51,21 @@ var _download = function(x, y, z, filename, maptype) {
     mkdirsSync(pathname)
     if (!fs.existsSync(filename)) {
         http.get(url, function(res) {
-                console.log(res)
-                var imgData = ""
-                res.setEncoding("binary")
-                res.on("data", function(chunk) {
-                    imgData += chunk;
-                })
-                res.on("end", function() {
-                    fs.writeFile(filename, imgData, "binary", function(err) {
-                        if (err) {
-                            console.log("down fail");
-                        }
-                        console.log("down success");
-                    })
+            console.log(res)
+            var imgData = ""
+            res.setEncoding("binary")
+            res.on("data", function(chunk) {
+                imgData += chunk;
+            })
+            res.on("end", function() {
+                fs.writeFile(filename, imgData, "binary", function(err) {
+                    if (err) {
+                        console.log("down fail");
+                    }
+                    console.log("down success");
                 })
             })
-            // request.head(url, function(err, res, body) {
-            //     if (err) {
-            //         console.log('get err ' + err)
-            //         return
-            //     }
-            //     request(url).on('error', function(err) {
-            //             console.log('pipe err ' + err)
-            //         })
-            //         .pipe(fs.createWriteStream(filename))
-            //     console.log('downloaded ' + filename)
-            // })
+        })
     }
 }
 
