@@ -2,9 +2,9 @@ var fs = require('fs')
 var request = require('request')
 var util = require('util')
 var path = require('path')
-var images = require('images')
 var http = require('http')
 var Q = require('q')
+var sharp = require('sharp')
 
 
 URL = {
@@ -147,19 +147,26 @@ function mkdirsSync(dirpath, mode) {
 var mosaic = function(left, right, top, bottom, zoom, output, filename) {
     var sizeX = (right - left + 1) * 256
     var sizeY = (bottom - top + 1) * 256
-    var outputImage = images(sizeX, sizeY)
+    var channels = 4
+    var rgbaPixel = 0x00000000;
+
+    var canvas = Buffer.alloc(sizeX * sizeY * channels, rgbaPixel)
+
+    var outputImage = sharp(canvas, { raw : { sizeX, sizeY, channels } })
 
     for (var x = left; x < right + 1; x++) {
         for (var y = top; y < bottom + 1; y++) {
             var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: zoom, filename: filename })
             if (!fs.existsSync(filename)) {
-                var targetImage = images(pathname);
-                outputImage.draw(targetImage, 256 * (x - left), 256 * (y - top))
+                
+                outputImage.overlayWith(pathname,{top:256 * (y - top),left:256 * (x - left)})
             }
         }
     }
     mkdirsSync("output")
-    outputImage.save("output/" + output + ".png")
+    outputImage.toFile("output/" + output + ".png", function(err,info){
+        console.log(err)
+    })
 }
 
 if (require.main === module) {
