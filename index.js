@@ -4,6 +4,7 @@ var util = require('util')
 var path = require('path')
 var images = require('images')
 var http = require('http')
+var Q = require('q')
 
 
 URL = {
@@ -31,7 +32,7 @@ var processTilenum = function(left, right, top, bottom, zoom, output, maptype) {
     output = output || 'mosaic'
     maptype = maptype || 'default'
     checkout(left, right, top, bottom, zoom, output, maptype)
-    mosaic(left, right, top, bottom, zoom, output, maptype)
+    
 }
 
 var download = function(left, right, top, bottom, z, filename, maptype) {
@@ -51,7 +52,7 @@ var _download = function(x, y, z, filename, maptype) {
     mkdirsSync(pathname)
     if (!fs.existsSync(filename)) {
         http.get(url, function(res) {
-            console.log(res)
+            
             var imgData = ""
             res.setEncoding("binary")
             res.on("data", function(chunk) {
@@ -62,7 +63,7 @@ var _download = function(x, y, z, filename, maptype) {
                     if (err) {
                         console.log("down fail");
                     }
-                    console.log("down success");
+                    
                 })
             })
         })
@@ -83,29 +84,37 @@ var random = function(start, end) {
 
 var checkout = function(left, right, top, bottom, z, filename, maptype) {
     maptype = maptype || 'default'
+    var promises = []
     for (var x = left; x < right + 1; x++) {
         for (var y = top; y < bottom + 1; y++) {
-            var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: z, filename: filename })
-            var abspath = path.resolve(pathname)
-
-            if (!fs.existsSync(abspath)) {
-                _download(x, y, z, pathname, maptype)
-            } else {
-                fs.stat(abspath, function(err, stats) {
-                    if (err) {
-                        _download(x, y, z, pathname, maptype)
-                        return
-                    }
-                    if (!stats.size) {
-                        fs.unlinkSync(path)
-                        _download(x, y, z, pathname, maptype)
-                    }
-                })
-            }
+            promises.push(checkoutSingle(x,y,z,filename,maptype))
         }
     }
+
+    Q.all(promises).then(function(){
+        mosaic(left, right, top, bottom, z, filename, maptype)
+    })
 }
 
+var checkoutSingle = function(x,y,z,filename,maptype){
+    var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: z, filename: filename })
+    var abspath = path.resolve(pathname)
+
+    if (!fs.existsSync(abspath)) {
+        _download(x, y, z, pathname, maptype)
+    } else {
+        fs.stat(abspath, function(err, stats) {
+            if (err) {
+                _download(x, y, z, pathname, maptype)
+                return
+            }
+            if (!stats.size) {
+                fs.unlinkSync(path)
+                _download(x, y, z, pathname, maptype)
+            }
+        })
+    }
+}
 
 String.prototype.format = function(json) {
     var temp = this
@@ -149,6 +158,7 @@ var mosaic = function(left, right, top, bottom, zoom, output, filename) {
             }
         }
     }
+    mkdirsSync("output")
     outputImage.save("output/" + output + ".png")
 }
 

@@ -24,6 +24,7 @@
   "homepage": "https://github.com/brandonxiang/nodemap_spider#readme",
   "dependencies": {
     "images": "^3.0.0",
+    "q": "^1.4.1",
     "request": "^2.74.0",
     "util": "^0.10.3"
   }

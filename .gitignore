@@ -39,3 +39,4 @@ jspm_packages
 tiles/
 output/
 .vscode/
+.DS_Store
