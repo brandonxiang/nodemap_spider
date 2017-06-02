@@ -16,6 +16,17 @@ const URL = {
     'default': 'http://61.144.226.124:9001/map/GISDATA/WORKNET/{z}/{y}/{x}.png'
 }
 
+/**
+ * Get the map by latitude and longitude of four corners 
+ * 
+ * @param {Number} north Latitude for Northwest
+ * @param {Number} west Longitude for Northwest
+ * @param {Number} south Latitude for Sourtheast
+ * @param {Number} east Longitude for Sourtheast
+ * @param {Number} zoom Zoom
+ * @param {String} output output filename
+ * @param {String} maptype type
+ */
 const procesLatlng = function (north, west, south, east, zoom, output, maptype) {
     output = output || 'mosaic'
     maptype = maptype || 'default'
@@ -25,7 +36,17 @@ const procesLatlng = function (north, west, south, east, zoom, output, maptype) 
     processTilenum(left_top[0], right_bottom[0], left_top[1], right_bottom[1], zoom, output, maptype)
 }
 
-
+/**
+ * Get the map by x-axis and y axis of four corners
+ * 
+ * @param {Number} left x-axis for Northwest
+ * @param {Number} right y-axis for Northwest
+ * @param {Number} top x-axis for Sourtheast
+ * @param {Number} bottom y-axis for Northeast
+ * @param {Number} zoom Zoom
+ * @param {String} output output filename
+ * @param {String} maptype type
+ */
 const processTilenum = function (left, right, top, bottom, zoom, output, maptype) {
     output = output || 'mosaic'
     maptype = maptype || 'default'
