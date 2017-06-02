@@ -3,6 +3,7 @@ const path = require('path')
 const images = require('images')
 const http = require('http')
 const lwip = require('lwip')
+const async = require('async')
 
 
 const URL = {
@@ -146,21 +147,46 @@ const mkdirsSync = function (dirpath, mode) {
 
 
 const mosaic = function (left, right, top, bottom, zoom, output, filename) {
-    var sizeX = (right - left + 1) * 256
-    var sizeY = (bottom - top + 1) * 256
-    var outputImage = images(sizeX, sizeY)
+    const sizeX = (right - left + 1) * 256
+    const sizeY = (bottom - top + 1) * 256
+    mkdirsSync('output')
 
-    for (var x = left; x < right + 1; x++) {
-        for (var y = top; y < bottom + 1; y++) {
-            var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: zoom, filename: filename })
-            if (!fs.existsSync(filename)) {
-                var targetImage = images(pathname)
-                outputImage.draw(targetImage, 256 * (x - left), 256 * (y - top))
-            }
+    const tasks = []
+
+    for (let x = left; x < right + 1; x++) {
+        for (let y = top; y < bottom + 1; y++) {
+            tasks.push(cloneImage(x, y, left, top, zoom, filename))
         }
     }
-    mkdirsSync('output')
-    outputImage.save('output/' + output + '.png')
+
+    Promise.all(tasks)
+        .then(function (clones) {
+            lwip.create(sizeX, sizeY, function (err, canvas){
+                if(err) throw new Error(err)
+
+                 async.eachSeries(clones, function (clone, callback) {
+                    canvas.paste(clone.pasteX, clone.pasteY, clone.image, callback)
+                }, function(err) {
+                    if (err) throw new Error(err)
+
+                    canvas.writeFile('output/' + output + '.png', function(err) {
+                        if (err) throw new Error(err)
+                    })
+                })
+            })
+        })
+
+}
+
+const cloneImage = function (x, y, left, top, zoom, filename) {
+    return new Promise(function (resolve, reject) {
+        var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: zoom, filename: filename })
+        lwip.open(pathname, function (err, image) {
+            if (err) reject(err)
+
+            resolve({ image, pasteX: 256 * (x - left), pasteY: 256 * (y - top) })
+        })
+    })
 }
 
 module.exports = {
