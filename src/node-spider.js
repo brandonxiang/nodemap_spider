@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const images = require('images')
 const http = require('http')
-const Q = require('q')
+const lwip = require('lwip')
 
 
 const URL = {
@@ -59,7 +59,7 @@ const _download = function (x, y, z, filename, maptype) {
             res.on('end', function () {
                 fs.writeFile(filename, imgData, 'binary', function (err) {
                     if (err) {
-                        throw new Error('Network Error, Fail to download') 
+                        throw new Error('Network Error, Fail to download')
                     }
                 })
             })
@@ -88,7 +88,7 @@ const checkout = function (left, right, top, bottom, z, filename, maptype) {
         }
     }
 
-    Q.all(tasks).then(function () {
+    Promise.all(tasks).then(function () {
         mosaic(left, right, top, bottom, z, filename, maptype)
     })
 }
@@ -97,20 +97,24 @@ const checkoutSingle = function (x, y, z, filename, maptype) {
     var pathname = 'tiles/{filename}/{z}/{x}/{y}.png'.format({ x: x, y: y, z: z, filename: filename })
     var abspath = path.resolve(pathname)
 
-    if (!fs.existsSync(abspath)) {
-        _download(x, y, z, pathname, maptype)
-    } else {
-        fs.stat(abspath, function (err, stats) {
-            if (err) {
-                _download(x, y, z, pathname, maptype)
-                return
-            }
-            if (!stats.size) {
-                fs.unlinkSync(path)
-                _download(x, y, z, pathname, maptype)
-            }
-        })
-    }
+    return new Promise((resolve, reject) => {
+        if (!fs.existsSync(abspath)) {
+            _download(x, y, z, pathname, maptype)
+        } else {
+            fs.stat(abspath, function (err, stats) {
+                if (err) {
+                    _download(x, y, z, pathname, maptype)
+                    reject(err)
+                    return
+                }
+                if (!stats.size) {
+                    fs.unlinkSync(path)
+                    _download(x, y, z, pathname, maptype)
+                }
+            })
+        }
+        resolve()
+    })
 }
 
 String.prototype.format = function (json) {
