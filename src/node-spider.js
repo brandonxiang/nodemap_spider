@@ -1,6 +1,5 @@
 const fs = require('fs')
 const path = require('path')
-const images = require('images')
 const http = require('http')
 const lwip = require('lwip')
 const async = require('async')
