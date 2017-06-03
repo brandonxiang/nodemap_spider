@@ -1,8 +1,8 @@
 {
   "name": "nodemap_spider",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A Spider for web map",
-  "main": "index.js",
+  "main": "src/node-spider.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
